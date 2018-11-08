@@ -30,6 +30,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import com.qualcomm.robotcore.robot.Robot;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.util.Hardware;
@@ -62,6 +63,9 @@ public class TeleopTricerabots extends LinearOpMode {
     private final double CUBE_HUE_LOWER_BOUND = 0;
     private final double SATURATION_LOWER_BOUND = .2;
     
+    private int elevatorpos;
+    private int extendedpos;
+    
 
     /* Declare OpMode members. */
     HardwareTricerabots   robot = new HardwareTricerabots();  // Use a K9'shardware
@@ -92,25 +96,32 @@ public class TeleopTricerabots extends LinearOpMode {
             return false;
         }
     }
+    
 
     @Override
     public void runOpMode() {
         double left;
         double right;
         
+        
 
         /* Initialize the hardware variables.
          * The init() method of the hardware class does all the work here
          */
         robot.init(hardwareMap);
+        
+        elevatorpos = robot.elevatorpos;
+        extendedpos = elevatorpos + 1000;
 
         ColorSensor colorSensor = robot.colorSensor;
-        DcMotor motor = robot.motor;
+        DcMotor elevator = robot.elevator;
         
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Say", "Hello Driver");    //
         telemetry.update();
         
+        
+
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
@@ -122,12 +133,14 @@ public class TeleopTricerabots extends LinearOpMode {
             left = gamepad1.left_stick_y;
             right = gamepad1.right_stick_y;
             
-            if (gamepad1.dpad_up) {
-                motor.setPower(1);
-            } else if (gamepad1.dpad_down) {
-                motor.setPower(-1);
-            } else {
-                motor.setPower(0);
+            
+            
+            
+            
+            if (gamepad1.right_bumper) {
+                elevator.setTargetPosition(extendedpos);
+            } else if (gamepad1.right_trigger > .5) {
+                elevator.setTargetPosition(elevatorpos);
             }
             
             robot.leftDrive.setPower(left);
@@ -147,19 +160,16 @@ public class TeleopTricerabots extends LinearOpMode {
                 armPosition += ARM_SPEED;
             else if (gamepad1.y)
                 armPosition -= ARM_SPEED;
-
             // Use gamepad X & B to open and close the claw
             if (gamepad1.x)
                 clawPosition += CLAW_SPEED;
             else if (gamepad1.b)
                 clawPosition -= CLAW_SPEED;
-
             // Move both servos to new position.
             armPosition  = Range.clip(armPosition, robot.ARM_MIN_RANGE, robot.ARM_MAX_RANGE);
             robot.arm.setPosition(armPosition);
             clawPosition = Range.clip(clawPosition, robot.CLAW_MIN_RANGE, robot.CLAW_MAX_RANGE);
             robot.claw.setPosition(clawPosition);
-
             // Send telemetry message to signify robot running;
             telemetry.addData("arm",   "%.2f", armPosition);
             telemetry.addData("claw",  "%.2f", clawPosition);
