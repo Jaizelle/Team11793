@@ -13,7 +13,7 @@
  *
  * Neither the name of FIRST nor the names of its contributors may be used to endorse or
  * promote products derived from this software without specific prior written permission.
- I*
+ *
  * NO EXPRESS OR IMPLIED LICENSES TO ANY PARTY'S PATENT RIGHTS ARE GRANTED BY THIS
  * LICENSE. THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
@@ -30,10 +30,10 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
-import com.qualcomm.robotcore.robot.Robot;
-import com.qualcomm.robotcore.hardware.DcMotor;
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import com.qualcomm.robotcore.hardware.ColorSensor;
-import com.qualcomm.robotcore.util.Hardware;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.Range;
@@ -54,45 +54,48 @@ import com.qualcomm.robotcore.util.Range;
  * Use Android Studios to Copy this Class, and Paste it into your team's code folder with a new name.
  * Remove or comment out the @Disabled line to add this opmode to the Driver Station OpMode list
  */
+@Autonomous(name="Tricerabots: Autonomous Tank", group="Tricerabots")
 
-@TeleOp(name="Tricerabots: Telop Tank", group="Tricerabots")//this is no longer tank mode i guess
-
-public class TeleopTricerabots extends LinearOpMode {
-    /*
+public class AutonTricerabots extends LinearOpMode {
+    
     private final double CUBE_HUE_UPPER_BOUND = Math.PI/6;
     private final double CUBE_HUE_LOWER_BOUND = 0;
     private final double SATURATION_LOWER_BOUND = .2;
-    private final double root = Math.sqrt(3);
-    */
-    private int elevatorpos;
-    private int extendedpos;
-    /*
-    private double ambientr;
-    private double ambientb;
-    private double ambientg;
+    
+    private int ambientr;
+    private int ambientb;
+    private int ambientg;
+    private int lpos;
+    private int rpos;
+    
+    private int i = 0;
     
     private ColorSensor colorSensor;
-    */
-    /* Declare OpMode members. */
+    private DcMotor leftDrive;
+    private DcMotor rightDrive;
     
-    HardwareTricerabots   robot = new HardwareTricerabots();  // Use a K9'shardware
-        
-               // Define and initialize ALL installed servos.
-        /*
-        GrabbingOn  = hwMap.get(Servo.class, "GrabbingOn");
-        Hammer      = hwMap.get(Servo.class, "Hammer");
-        Gate      = hwMap.get(Servo.class, "Gate");
-        GrabbingOn.setPosition(GRAB_ON);
-        Hammer.setPosition(HAMMER_HOME);
-        Gate.setPosition(MARK_GATE);
-        */
-    /*
-    double          armPosition     = robot.ARM_HOME;                   // Servo safe position
-    double          clawPosition    = robot.CLAW_HOME;                  // Servo safe position
-    final double    CLAW_SPEED      = 0.01 ;                            // sets rate to move servo
-    final double    ARM_SPEED       = 0.01 ;                            // sets rate to move servo
-*/
-/*
+    private int[][] movements = new int[2][2];
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    /* Declare OpMode members. */
+    HardwareTricerabots   robot           = new HardwareTricerabots();              // Use a K9'shardware
+    
+    
     private boolean detectCube(double saturation, double hue) {
         if (
             saturation > SATURATION_LOWER_BOUND && 
@@ -110,107 +113,84 @@ public class TeleopTricerabots extends LinearOpMode {
         ambientb = colorSensor.blue();
         ambientg = colorSensor.green();
     }
-*/
+    
+    private int[] move(int dist) {
+        int[] m = new int[2];
+        m[0] = dist;
+        m[1] = dist;
+        return m;
+    }
+    
+    private void updateMotorPos() {
+        leftDrive.setTargetPosition(lpos);
+        rightDrive.setTargetPosition(rpos);
+    }
+    
     @Override
     public void runOpMode() {
-        double left;
-        double right;
+        
+        movements[0] = move(1000);
         
         
-
+        
         /* Initialize the hardware variables.
          * The init() method of the hardware class does all the work here
          */
         robot.init(hardwareMap);
         
-        elevatorpos = robot.elevatorpos;
-        extendedpos = elevatorpos - 360;
-/*
         colorSensor = robot.colorSensor;
-        */
-        DcMotor elevator = robot.elevator;
+        leftDrive = robot.leftDrive;
+        rightDrive = robot.rightDrive;
+        
+        leftDrive.setPower(1);
+        rightDrive.setPower(1);
+        
+        leftDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        rightDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        lpos = leftDrive.getCurrentPosition();
+        rpos = -rightDrive.getCurrentPosition();
         
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Say", "Hello Driver");    //
         telemetry.update();
         
-
-
-
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
-
+        
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
-
+            boolean busy = leftDrive.isBusy() || rightDrive.isBusy();
+            if (!busy && i < movements.length) {
+                lpos += movements[i][0];
+                rpos += movements[i][1];
+                i++;
+                
+                updateMotorPos();
+            }
+            
+            
+            
             // Run wheels in tank mode (note: The joystick goes negative when pushed forwards, so negate it)
-            left = gamepad1.left_stick_y;
-            right = gamepad1.right_stick_y;
             
+            int r = colorSensor.red() - ambientr;
+            int g = colorSensor.green() - ambientg;
+            int b = colorSensor.blue() - ambientb;
             
-            
-            
-            if (gamepad1.right_bumper) {
-                elevator.setTargetPosition(extendedpos);
-            } else if (gamepad1.right_trigger > .5) {
-                elevator.setTargetPosition(elevatorpos);
-            }
-            
-            robot.leftDrive.setPower(left);
-            robot.rightDrive.setPower(right);
-            /*
-            if (gamepad1.y) {
-                calibrate();
-            }
-            */
-            /*
-            int r = colorSensor.red();
-            int g = colorSensor.green();
-            int b = colorSensor.blue();
-            
-            
+            double root = Math.sqrt(3);
             
             double h = Math.atan2(root * (g - b), 2 * r - g - b);
             double sat = Math.hypot(root * (g - b)/2 ,r - g/2 - b/2)/(r+g+b);
-            */
-            /*
-            // Use gamepad Y & A raise and lower the arm
-            if (gamepad1.a)
-                armPosition += ARM_SPEED;
-            else if (gamepad1.y)
-                armPosition -= ARM_SPEED;
-            // Use gamepad X & B to open and close the claw
-            if (gamepad1.x)
-                clawPosition += CLAW_SPEED;
-            else if (gamepad1.b)
-                clawPosition -= CLAW_SPEED;
-            // Move both servos to new position.
-            armPosition  = Range.clip(armPosition, robot.ARM_MIN_RANGE, robot.ARM_MAX_RANGE);
-            robot.arm.setPosition(armPosition);
-            clawPosition = Range.clip(clawPosition, robot.CLAW_MIN_RANGE, robot.CLAW_MAX_RANGE);
-            robot.claw.setPosition(clawPosition);
-            // Send telemetry message to signify robot running;
-            telemetry.addData("arm",   "%.2f", armPosition);
-            telemetry.addData("claw",  "%.2f", clawPosition);
-            */
             
-            /*
-            telemetry.addData("left_drive",  "%.2f", left);
-            telemetry.addData("right_drive", "%.2f", right);
-            */
-
-/*
-            telemetry.addData("hue", "%.2f", h);
+            // Send telemetry message to signify robot running;
+            
+             telemetry.addData("hue", "%.2f", h);
             telemetry.addData("saturation", "%.2f", sat);
             
-            telemetry.addData("ambient red", "%.2f", ambientr);
-            telemetry.addData("ambient green", "%.2f", ambientg);
-            telemetry.addData("ambient blue", "%.2f", ambientb);
-            
             telemetry.addData("isCube", detectCube(sat, h));
-            */
-            telemetry.update();
+            telemetry.addData("lpos", leftDrive.getCurrentPosition());
+            telemetry.addData("rpos", rightDrive.getCurrentPosition());
             
+            telemetry.update();
 
             // Pause for 40 mS each cycle = update 25 times a second.
             sleep(40);

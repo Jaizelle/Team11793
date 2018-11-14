@@ -30,6 +30,8 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.robotcore.hardware.GyroSensor;
 import com.qualcomm.robotcore.hardware.ColorSensor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -65,6 +67,7 @@ public class HardwareTricerabots
     public ColorSensor colorSensor = null;
     public int elevatorpos = 0;
     
+    public BNO055IMU imu;
 
     /*
     public  Servo   GrabbingOn    = null ;
@@ -118,10 +121,11 @@ public class HardwareTricerabots
         leftDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rightDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         elevator.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        claw.setMode(DcMotor.RunMode.RUN_TO_POSITION);
       
         elevatorpos = elevator.getCurrentPosition();
         
-        colorSensor = hwMap.get(ColorSensor.class, "color_sensor");
+        //colorSensor = hwMap.get(ColorSensor.class, "color_sensor");
         
 
         // Define and initialize ALL installed servos.
