@@ -60,14 +60,15 @@ public class HardwareTricerabots
     /* Public OpMode Members */
     public  DcMotor  leftDrive    = null ;
     public  DcMotor  rightDrive   = null ;
-    
-    public DcMotor elevator = null;
+    public  DcMotor  elevator = null;
     public DcMotor claw = null;
     
     public ColorSensor colorSensor = null;
-    public int elevatorpos = 0;
     
     public BNO055IMU imu;
+    
+    public int elevatorpos;
+    public int extendedpos;
 
     /*
     public  Servo   GrabbingOn    = null ;
@@ -96,6 +97,7 @@ public class HardwareTricerabots
 
     /* Initialize standard Hardware interfaces */
     public void init(HardwareMap ahwMap) {
+        //all elevator related initialization will be done by the init method in the "EleHW" object.
         // save reference to HW Map
         hwMap = ahwMap;
 
@@ -106,7 +108,7 @@ public class HardwareTricerabots
         
         elevator = hwMap.get(DcMotor.class, "elevator");
         claw = hwMap.get(DcMotor.class, "claw");
-     
+        colorSensor = hwMap.get(ColorSensor.class, "color_sensor");
 
         // Set all motors to zero power
         leftDrive.setPower(0);
@@ -120,12 +122,10 @@ public class HardwareTricerabots
         // May want to use RUN_USING_ENCODERS if encoders are installed.
         leftDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rightDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        elevator.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        claw.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-      
-        elevatorpos = elevator.getCurrentPosition();
+        claw.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         
-        //colorSensor = hwMap.get(ColorSensor.class, "color_sensor");
+        elevatorpos = elevator.getCurrentPosition();
+        extendedpos = elevatorpos + 533;//initially this constant was 710. at the time, we were using a gear ratio for torque of 60/45 = 4/3. 710 * 3 / 4 = total distance = x * 1. x = 710*3/4 = 532.5 ~ 533. This may need to be adjusted but it is probably smarter to remove the stopper.
         
 
         // Define and initialize ALL installed servos.

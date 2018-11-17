@@ -58,24 +58,18 @@ import com.qualcomm.robotcore.util.Range;
 @TeleOp(name="Tricerabots: Telop Tank", group="Tricerabots")//this is no longer tank mode i guess
 
 public class TeleopTricerabots extends LinearOpMode {
-    /*
-    private final double CUBE_HUE_UPPER_BOUND = Math.PI/6;
-    private final double CUBE_HUE_LOWER_BOUND = 0;
-    private final double SATURATION_LOWER_BOUND = .2;
-    private final double root = Math.sqrt(3);
-    */
+    
     private int elevatorpos;
     private int extendedpos;
-    /*
-    private double ambientr;
-    private double ambientb;
-    private double ambientg;
+    private int hookpos;
     
+    private DcMotor elevator;
     private ColorSensor colorSensor;
-    */
-    /* Declare OpMode members. */
     
-    HardwareTricerabots   robot = new HardwareTricerabots();  // Use a K9'shardware
+    private ColorSensorStuff collor = null;
+    
+    /* Declare OpMode members. */
+    HardwareTricerabots   robot = new HardwareTricerabots();  // Use Tricerabots shardware
         
                // Define and initialize ALL installed servos.
         /*
@@ -92,43 +86,37 @@ public class TeleopTricerabots extends LinearOpMode {
     final double    CLAW_SPEED      = 0.01 ;                            // sets rate to move servo
     final double    ARM_SPEED       = 0.01 ;                            // sets rate to move servo
 */
-/*
-    private boolean detectCube(double saturation, double hue) {
-        if (
-            saturation > SATURATION_LOWER_BOUND && 
-            hue > CUBE_HUE_LOWER_BOUND && 
-            hue < CUBE_HUE_UPPER_BOUND
-            ) {
-            return true;
-        } else {
-            return false;
-        }
-    }
     
-    private void calibrate() {
-        ambientr = colorSensor.red();
-        ambientb = colorSensor.blue();
-        ambientg = colorSensor.green();
-    }
-*/
+
     @Override
     public void runOpMode() {
         double left;
         double right;
-        
+        double clawpower;
         
 
         /* Initialize the hardware variables.
          * The init() method of the hardware class does all the work here
          */
         robot.init(hardwareMap);
+        elevator = robot.elevator;
         
+        DcMotor claw = robot.claw;
+        //elevatorpos is the position at initiation which is when the motor is lowered.
         elevatorpos = robot.elevatorpos;
-        extendedpos = elevatorpos - 360;
-/*
-        colorSensor = robot.colorSensor;
+        //extendedpos is the position at which the elevator is extended which should be elevatorpos shifted by a certain amount.
+        extendedpos = robot.extendedpos;
+        elevator.setTargetPosition(elevatorpos);
+        
+        /*
+        the claw is not using run to position mode.
+        clawpos = robot.clawpos;
+        hookpos = clawpos - 710;
         */
-        DcMotor elevator = robot.elevator;
+        
+        colorSensor = robot.colorSensor;
+        
+        collor = new ColorSensorStuff(colorSensor);
         
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Say", "Hello Driver");    //
@@ -142,37 +130,38 @@ public class TeleopTricerabots extends LinearOpMode {
 
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
-
             // Run wheels in tank mode (note: The joystick goes negative when pushed forwards, so negate it)
             left = gamepad1.left_stick_y;
             right = gamepad1.right_stick_y;
+            clawpower = gamepad2.left_stick_y/2;
             
-            
-            
-            
-            if (gamepad1.right_bumper) {
+            //this controls the elevator motor
+            if (gamepad2.right_bumper) {
+                //extend the elevator
                 elevator.setTargetPosition(extendedpos);
-            } else if (gamepad1.right_trigger > .5) {
+            } else if (gamepad2.right_trigger > .5) {
+                //retract the elevator
                 elevator.setTargetPosition(elevatorpos);
             }
             
-            robot.leftDrive.setPower(left);
-            robot.rightDrive.setPower(right);
             /*
-            if (gamepad1.y) {
-                calibrate();
+            if (gamepad2.left_bumper) {
+                clawpos += 10;
+            } else if (gamepad2.left_trigger > .5) {
+                clawpos -= 10;
+                claw.setTargetPosition(clawpos);
             }
             */
-            /*
-            int r = colorSensor.red();
-            int g = colorSensor.green();
-            int b = colorSensor.blue();
             
             
+            robot.leftDrive.setPower(left);
+            robot.rightDrive.setPower(right);
+            claw.setPower(clawpower);
             
-            double h = Math.atan2(root * (g - b), 2 * r - g - b);
-            double sat = Math.hypot(root * (g - b)/2 ,r - g/2 - b/2)/(r+g+b);
-            */
+            if (gamepad1.y) {
+                collor.calibrate();
+            }
+            
             /*
             // Use gamepad Y & A raise and lower the arm
             if (gamepad1.a)
@@ -193,25 +182,19 @@ public class TeleopTricerabots extends LinearOpMode {
             telemetry.addData("arm",   "%.2f", armPosition);
             telemetry.addData("claw",  "%.2f", clawPosition);
             */
+            double[] color = collor.getColor();
             
-            /*
             telemetry.addData("left_drive",  "%.2f", left);
             telemetry.addData("right_drive", "%.2f", right);
-            */
-
-/*
-            telemetry.addData("hue", "%.2f", h);
-            telemetry.addData("saturation", "%.2f", sat);
             
-            telemetry.addData("ambient red", "%.2f", ambientr);
-            telemetry.addData("ambient green", "%.2f", ambientg);
-            telemetry.addData("ambient blue", "%.2f", ambientb);
+            telemetry.addData("isCube", collor.detectCuble());
+            telemetry.addData("hue", color[0]);
+            telemetry.addData("sat", color[1]);
             
-            telemetry.addData("isCube", detectCube(sat, h));
-            */
+            
+            telemetry.addData("pos", elevatorpos);
             telemetry.update();
             
-
             // Pause for 40 mS each cycle = update 25 times a second.
             sleep(40);
         }

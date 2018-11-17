@@ -61,20 +61,34 @@ public class AutonTricerabots extends LinearOpMode {
     private final double CUBE_HUE_UPPER_BOUND = Math.PI/6;
     private final double CUBE_HUE_LOWER_BOUND = 0;
     private final double SATURATION_LOWER_BOUND = .2;
-    
     private int ambientr;
     private int ambientb;
     private int ambientg;
+    //we can probably get rid of these as they can be replaced with the new ColorSensorStuff.
+    
     private int lpos;
     private int rpos;
+    private int elevatorpos;
+    private int extendedpos;
+    private int clawpos;
     
     private int i = 0;
+    private boolean go = false;
     
     private ColorSensor colorSensor;
     private DcMotor leftDrive;
     private DcMotor rightDrive;
+    private DcMotor elevator;
+    private DcMotor claw;
     
-    private int[][] movements = new int[2][2];
+    //epic name
+    private ColorSensorStuff collor = null;
+    
+    //movements represents a list of actions that the robot takes.
+    //The first column represents the distance that the left motor must move and the second column for the right motor.
+    private int[][] movements = new int[3][2];
+    
+    
     
     
     
@@ -96,7 +110,7 @@ public class AutonTricerabots extends LinearOpMode {
     HardwareTricerabots   robot           = new HardwareTricerabots();              // Use a K9'shardware
     
     
-    private boolean detectCube(double saturation, double hue) {
+    private boolean detectCube(double saturation, double hue) { //dont need
         if (
             saturation > SATURATION_LOWER_BOUND && 
             hue > CUBE_HUE_LOWER_BOUND && 
@@ -108,15 +122,25 @@ public class AutonTricerabots extends LinearOpMode {
         }
     }
     
-    private void calibrate() {
+    private void calibrate() { //dont need
         ambientr = colorSensor.red();
         ambientb = colorSensor.blue();
         ambientg = colorSensor.green();
     }
-    
+    //these two methods create a quick way to add a movement to the movements array.
+    //move(3000) = 26 in. 1 in = move(115.3)
     private int[] move(int dist) {
         int[] m = new int[2];
         m[0] = dist;
+        m[1] = dist;
+        return m;
+    }
+    //wheels have a lever arm of approx. r = 11.25 in /2 = 5.625 in.
+    // 2pi * r = displacement = 35.34 in = turn(4075) to turn 360 degrees.
+    //somthing went wrong... The wheels are slipping.
+    private int[] turn(int dist) {
+        int[] m = new int[2];
+        m[0] = -dist;
         m[1] = dist;
         return m;
     }
@@ -129,8 +153,11 @@ public class AutonTricerabots extends LinearOpMode {
     @Override
     public void runOpMode() {
         
-        movements[0] = move(1000);
-        
+        /*
+        movements[0] = turn(900000);
+        movements[1] = turn(500);
+        movements[2] = move (1000);
+        */
         
         
         /* Initialize the hardware variables.
@@ -141,14 +168,28 @@ public class AutonTricerabots extends LinearOpMode {
         colorSensor = robot.colorSensor;
         leftDrive = robot.leftDrive;
         rightDrive = robot.rightDrive;
+        elevator = robot.elevator;
+        claw = robot.claw;
         
-        leftDrive.setPower(1);
-        rightDrive.setPower(1);
+        leftDrive.setPower(1/2);
+        rightDrive.setPower(1/2);
         
+        //set up  motors for run to position mode and set target position to current position
         leftDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         rightDrive.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        claw.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         lpos = leftDrive.getCurrentPosition();
-        rpos = -rightDrive.getCurrentPosition();
+        rpos = rightDrive.getCurrentPosition();
+        clawpos = claw.getCurrentPosition();
+        updateMotorPos();
+        
+        //elevatorpos is the position at initiation which is when the motor is lowered.
+        elevatorpos = robot.elevatorpos;
+        //extendedpos is the position at which the elevator is extended which should be elevatorpos shifted by a certain amount.
+        extendedpos = elevatorpos + 500;
+        elevator.setTargetPosition(elevatorpos);
+        
+        collor = new ColorSensorStuff(colorSensor);
         
         // Send telemetry message to signify robot waiting;
         telemetry.addData("Say", "Hello Driver");    //
@@ -159,41 +200,51 @@ public class AutonTricerabots extends LinearOpMode {
         
         // run until the end of the match (driver presses STOP)
         while (opModeIsActive()) {
+            
             boolean busy = leftDrive.isBusy() || rightDrive.isBusy();
-            if (!busy && i < movements.length) {
+            if (!busy && i < movements.length && go) { //if the motors aren't busy and there is a movement avaliable and we are clear to move,
                 lpos += movements[i][0];
-                rpos += movements[i][1];
-                i++;
-                
+                rpos += movements[i][1]; //set the target positions of the motor to that of the next movement so that the robot reaches the next position.
+                i++; //and increment i
                 updateMotorPos();
             }
             
             
             
+            elevator.setTargetPosition(extendedpos);
+            
+            if (!elevator.isBusy()) {
+                claw.setTargetPosition(clawpos - 270); //this will only fire when the elevator has fully extended so it is critical that we get this right.
+                go = true;
+            }
+            
             // Run wheels in tank mode (note: The joystick goes negative when pushed forwards, so negate it)
             
+            //dont need this stuff
             int r = colorSensor.red() - ambientr;
             int g = colorSensor.green() - ambientg;
             int b = colorSensor.blue() - ambientb;
             
-            double root = Math.sqrt(3);
-            
-            double h = Math.atan2(root * (g - b), 2 * r - g - b);
-            double sat = Math.hypot(root * (g - b)/2 ,r - g/2 - b/2)/(r+g+b);
-            
             // Send telemetry message to signify robot running;
+            double[] color = collor.getColor();
+            double h = color[0];
+            double sat = color[1];
             
-             telemetry.addData("hue", "%.2f", h);
+            telemetry.addData("hue", "%.2f", h);
             telemetry.addData("saturation", "%.2f", sat);
             
             telemetry.addData("isCube", detectCube(sat, h));
+            telemetry.addData("elevator displacement", elevator.getCurrentPosition() - elevatorpos);
+            
+            /*
             telemetry.addData("lpos", leftDrive.getCurrentPosition());
             telemetry.addData("rpos", rightDrive.getCurrentPosition());
+            */
             
             telemetry.update();
-
+            
             // Pause for 40 mS each cycle = update 25 times a second.
-            sleep(40);
+            sleep(40); //we can change this number if we need somthing more precise.
         }
     }
 }
