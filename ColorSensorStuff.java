@@ -9,9 +9,9 @@ as any modifycations made in this class will affect any opmode that uses this cl
 also this is the best name i could come up with.
 */
 public class ColorSensorStuff {
-  public final double CUBE_HUE_UPPER_BOUND = Math.PI/6; //the bounds represent ranges of colors acceptable for a "cube". 
-  public final double CUBE_HUE_LOWER_BOUND = 0; //the hue bounds are less important than the saturation bound as all objects except for the cube have any significant saturation whatsoever.
-  public final double SATURATION_LOWER_BOUND = .2; //change this
+  public final double CUBE_HUE_UPPER_BOUND = Math.PI/2; //the bounds represent ranges of colors acceptable for a "cube". 
+  public final double CUBE_HUE_LOWER_BOUND = Math.PI/6; //the hue bounds are less important than the saturation bound as all objects except for the cube have any significant saturation whatsoever.
+  public final double SATURATION_LOWER_BOUND = .17; //.17ish
   public final double ROOT = Math.sqrt(3);
   
   private int ambientr = 0; //probably should be private
@@ -22,28 +22,34 @@ public class ColorSensorStuff {
   
   public ColorSensorStuff (ColorSensor cs) {
     colorSensor = cs;
+    cs.enableLed(false);
   }
   
-  public void calibrate() {
+  public void calibrate() { //calibrates the color sensor. The color sensor will subtract ambient light from any measurements that it takes.
     ambientr = colorSensor.red();
     ambientg = colorSensor.green();
     ambientb = colorSensor.blue();
   }
   
-  public double[] getColor() {
+  public double[] getColor() { //returns the hue and saturation in a single array.
     double[] out = new double[2];
     int r = colorSensor.red() - ambientr;
     int g = colorSensor.green() - ambientg;
     int b = colorSensor.blue() - ambientb;
-    double x = r + g/2 + b/2;
+    double x = r - g/2 - b/2;
     double y = ROOT * g / 2 - ROOT * b / 2;
     double h = Math.atan2(x, y);
-    double s = Math.hypot(x, y);
+    double s;
+    if (r+b+g !=0) {
+      s = Math.hypot(x, y)/(r+b+g);
+    } else {
+      s = 0;
+    }
     out[0] = h;
     out[1] = s;
     return out;
   }
-  
+  //wow i cant spell
   public boolean detectCuble() { //if the color is within the ranges set by the bounds this method will return true.
     double[] color = getColor();
     double hue = color[0];

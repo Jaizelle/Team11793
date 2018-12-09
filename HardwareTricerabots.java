@@ -30,6 +30,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DistanceSensor;
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.hardware.GyroSensor;
 import com.qualcomm.robotcore.hardware.ColorSensor;
@@ -62,6 +63,9 @@ public class HardwareTricerabots
     public  DcMotor  rightDrive   = null ;
     public  DcMotor  elevator = null;
     public DcMotor claw = null;
+    public Servo servo = null;
+    public DistanceSensor distSensor = null;
+    
     
     public ColorSensor colorSensor = null;
     
@@ -69,6 +73,7 @@ public class HardwareTricerabots
     
     public int elevatorpos;
     public int extendedpos;
+    public int elevatordpos = 465;
 
     /*
     public  Servo   GrabbingOn    = null ;
@@ -104,11 +109,15 @@ public class HardwareTricerabots
         // Define and Initialize Motors
         leftDrive  = hwMap.get(DcMotor.class, "left_drive");
         rightDrive = hwMap.get(DcMotor.class, "right_drive");
-        leftDrive.setDirection(DcMotor.Direction.REVERSE);
+        rightDrive.setDirection(DcMotor.Direction.REVERSE);
         
         elevator = hwMap.get(DcMotor.class, "elevator");
         claw = hwMap.get(DcMotor.class, "claw");
         colorSensor = hwMap.get(ColorSensor.class, "color_sensor");
+        servo = hwMap.get(Servo.class, "servo");
+        distSensor = hwMap.get(DistanceSensor.class, "dist_sensor");
+        servo.setDirection(Servo.Direction.REVERSE);
+        
 
         // Set all motors to zero power
         leftDrive.setPower(0);
@@ -122,11 +131,12 @@ public class HardwareTricerabots
         // May want to use RUN_USING_ENCODERS if encoders are installed.
         leftDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         rightDrive.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        elevator.setMode(DcMotor.RunMode.RUN_TO_POSITION);
         claw.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         
         elevatorpos = elevator.getCurrentPosition();
-        extendedpos = elevatorpos + 533;//initially this constant was 710. at the time, we were using a gear ratio for torque of 60/45 = 4/3. 710 * 3 / 4 = total distance = x * 1. x = 710*3/4 = 532.5 ~ 533. This may need to be adjusted but it is probably smarter to remove the stopper.
-        
+        extendedpos = elevatorpos + elevatordpos;//initially this constant was 710. at the time, we were using a gear ratio for torque of 60/45 = 4/3. 710 * 3 / 4 = total distance = x * 1. x = 710*3/4 = 532.5 ~ 533. This may need to be adjusted but it is probably smarter to remove the stopper.
+        //this number is just an estimate and may need some adjusting.
 
         // Define and initialize ALL installed servos.
         /*

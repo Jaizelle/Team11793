@@ -30,6 +30,7 @@
 package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import com.qualcomm.robotcore.robot.Robot;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.ColorSensor;
@@ -61,7 +62,11 @@ public class TeleopTricerabots extends LinearOpMode {
     
     private int elevatorpos;
     private int extendedpos;
+    private int elevatordpos;
     private int hookpos;
+    
+    private int lposi;
+    private int rposi;
     
     private DcMotor elevator;
     private ColorSensor colorSensor;
@@ -94,25 +99,22 @@ public class TeleopTricerabots extends LinearOpMode {
         double right;
         double clawpower;
         
-
         /* Initialize the hardware variables.
          * The init() method of the hardware class does all the work here
          */
         robot.init(hardwareMap);
         elevator = robot.elevator;
+        lposi = robot.leftDrive.getCurrentPosition();
+        rposi = robot.rightDrive.getCurrentPosition();
         
         DcMotor claw = robot.claw;
         //elevatorpos is the position at initiation which is when the motor is lowered.
         elevatorpos = robot.elevatorpos;
         //extendedpos is the position at which the elevator is extended which should be elevatorpos shifted by a certain amount.
         extendedpos = robot.extendedpos;
+        elevatordpos = robot.elevatordpos;
         elevator.setTargetPosition(elevatorpos);
         
-        /*
-        the claw is not using run to position mode.
-        clawpos = robot.clawpos;
-        hookpos = clawpos - 710;
-        */
         
         colorSensor = robot.colorSensor;
         
@@ -144,14 +146,16 @@ public class TeleopTricerabots extends LinearOpMode {
                 elevator.setTargetPosition(elevatorpos);
             }
             
-            /*
-            if (gamepad2.left_bumper) {
-                clawpos += 10;
-            } else if (gamepad2.left_trigger > .5) {
-                clawpos -= 10;
-                claw.setTargetPosition(clawpos);
+            if (gamepad2.left_trigger > .5) {
+                elevatorpos = elevator.getCurrentPosition();
+                extendedpos = elevatorpos + elevatordpos;
             }
-            */
+            
+            if (gamepad2.left_bumper) {
+                extendedpos = elevator.getCurrentPosition();
+                elevatorpos = extendedpos - elevatordpos;
+            }
+            
             
             
             robot.leftDrive.setPower(left);
@@ -184,13 +188,18 @@ public class TeleopTricerabots extends LinearOpMode {
             */
             double[] color = collor.getColor();
             
-            telemetry.addData("left_drive",  "%.2f", left);
-            telemetry.addData("right_drive", "%.2f", right);
+            telemetry.addData("low position", elevatorpos);
+            telemetry.addData("extended position", extendedpos);
+            
+            //add data related to the total displacement of the robot.
+            telemetry.addData("left Drive Position", robot.leftDrive.getCurrentPosition() - lposi);
+            telemetry.addData("right Drive Position", robot.rightDrive.getCurrentPosition() - rposi);
             
             telemetry.addData("isCube", collor.detectCuble());
             telemetry.addData("hue", color[0]);
             telemetry.addData("sat", color[1]);
             
+            telemetry.addData("distance", robot.distSensor.getDistance(DistanceUnit.CM));
             
             telemetry.addData("pos", elevatorpos);
             telemetry.update();
